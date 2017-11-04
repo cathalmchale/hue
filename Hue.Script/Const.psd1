@@ -1,4 +1,9 @@
 @{
+	Home = @{
+		ExpectedLightName = "hallFrontDoor"
+		AutoOffDefaultInterval = 10000
+	}
+
 	Url = @{
 		LightList = "{0}/api/{1}/lights"
 		LightDetails = "{0}/api/{1}/lights/{2}"
@@ -14,5 +19,6 @@
 	Event = @{
 		MainMonitorId = "HueLightsMonitor"
 		SingleLightId = "HueSingleLightEvent{0}"
+		MainMonitorInterval = 10000
 	}
 }

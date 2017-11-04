@@ -1,102 +1,130 @@
 
 function Get-LightsMap {
-param(
-	[Parameter(Mandatory=$true)]
-	[hashtable]$const,
-	[Parameter(Mandatory=$true)]
-	[hashtable]$context
-) 
-	$url = $const.Url.LightList -f $context.Server, $context.ApiKey
-	$result = Invoke-RestMethod -Uri $url -Method GET
+	[CmdletBinding()]
+    [OutputType([psobject])]
+	param(
+		[Parameter(Mandatory=$true)]
+		[hashtable]$const,
+		[Parameter(Mandatory=$true)]
+		[hashtable]$context
+	) 
+	process {
+		$url = $const.Url.LightList -f $context.Server, $context.ApiKey
+		$result = Invoke-RestMethod -Uri $url -Method GET
 
-	$lights = @{}
+		$lights = @{}
 
-	foreach ($Property in $result.PSObject.Properties) {
-		$name = $Property.value.name
-		$id = $Property.Name
+		foreach ($Property in $result.PSObject.Properties) {
+			$name = $Property.value.name
+			$id = $Property.Name
 
-		$lights."$name" = $id
+			Write-Debug "Add light $name with id $id to map"
+			$lights."$name" = $id
+		}
+
+		$lights
 	}
-
-	return $lights
 }
 
 
 function Get-EventSourceId {
-param(
-	[Parameter(Mandatory=$true)]
-	[string]$lightId,
-	[Parameter(Mandatory=$true)]
-	[hashtable]$const
-) 
-	return $const.Event.SingleLightId -f $lightId
+	[CmdletBinding()]
+    [OutputType([String])]
+	param(
+		[Parameter(Mandatory=$true)]
+		[string]$lightId,
+		[Parameter(Mandatory=$true)]
+		[hashtable]$const
+	) 
+	process {
+		$id = $const.Event.SingleLightId -f $lightId
+		$id 
+	}
 }
 
 
 
 function Get-RegisteredEvents {
-param(
-	[Parameter(Mandatory=$true)]
-	[string]$lightId,
-	[Parameter(Mandatory=$true)]
-	[hashtable]$const
-) 
-	$id = Get-EventSourceId $lightId $const
-	Get-EventSubscriber -SourceIdentifier $id -ErrorAction SilentlyContinue
+	[CmdletBinding()]
+    [OutputType([psobject])]
+	param(
+		[Parameter(Mandatory=$true)]
+		[string]$lightId,
+		[Parameter(Mandatory=$true)]
+		[hashtable]$const
+	) 
+	process {
+		$id = Get-EventSourceId $lightId $const
+		Get-EventSubscriber -SourceIdentifier $id -ErrorAction SilentlyContinue
+	}
 }
 
 
 function Test-RegisterAutoOff {
-param(
-	[Parameter(Mandatory=$true)]
-	[string]$lightId,
-	[Parameter(Mandatory=$true)]
-	[hashtable]$const,
-	[Parameter(Mandatory=$true)]
-	[hashtable]$context
-) 
-	Write-Host "Got here"
+	[CmdletBinding()]
+    [OutputType([bool])]
+	param(
+		[Parameter(Mandatory=$true)]
+		[string]$lightId,
+		[Parameter(Mandatory=$true)]
+		[hashtable]$const,
+		[Parameter(Mandatory=$true)]
+		[hashtable]$context
+	) 
+	process {
+		Write-Verbose "Testing light $lightId for auto-off."
+		$registeredEvents = Get-RegisteredEvents $lightId $const
+		If ($registeredEvents) 
+		{
+			Write-Verbose "Event already registered against light $lightId"
+			return
+		}
 
-	$registeredEvents = Get-RegisteredEvents $lightId $const
-	If ($registeredEvents) 
-	{
-		# Event already registered against this light.
-		return $false
+		$url = $const.Url.LightDetails -f $($context.Server), $($context.ApiKey), $lightId
+		$lightDetails = Invoke-RestMethod -Uri $url -Method GET
+
+		If (-Not $lightDetails.state.on)
+		{
+			Write-Verbose "Light $lightId state is NOT on"
+			return
+		}
+
+		$true
 	}
-
-	$url = $const.Url.LightDetails -f $($context.Server), $($context.ApiKey), $lightId
-	$lightDetails = Invoke-RestMethod -Uri $url -Method GET
-
-	If (-Not $lightDetails.state.on)
-	{
-		# Light off - no concern.
-		return $false
-	}
-
-	return $true
 }
 
 
 function Register-BoundLightEvent {
-param(
-	[Parameter(Mandatory=$true)]
-	[string]$sourceIdentifier,
-	[Parameter(Mandatory=$true)]
-	[int]$interval,
-	[Parameter(Mandatory=$true)]
-	[ScriptBlock]$action,
-	[string]$arg = $null,
-	[Alias('Loop')]
-	[switch]$autoReset
-) 
-	$timer = New-Object System.Timers.Timer -Property @{
-		Interval = $interval; Enabled = $true; AutoReset = $autoReset
+	[CmdletBinding()]
+    [OutputType([psobject])]
+	param(
+		[Parameter(Mandatory=$true)]
+		[string]$sourceIdentifier,
+		[Parameter(Mandatory=$true)]
+		[int]$interval,
+		[Parameter(Mandatory=$true)]
+		[ScriptBlock]$action,
+		[string]$arg = $null,
+		[Alias('Loop')]
+		[switch]$autoReset
+	) 
+	process {
+		$timer = New-Object System.Timers.Timer -Property @{
+			Interval = $interval; Enabled = $true; AutoReset = $autoReset
+		}
+
+		$thisModule = Get-Command Start-LightsMonitor
+		$boundAction = $thisModule.Module.NewBoundScriptBlock($action)
+
+		$start = Register-ObjectEvent $timer Elapsed -SourceIdentifier $sourceIdentifier -Action $boundAction -MessageData $arg
+		$timer.start()
+
+		$details = @{
+			SourceIdentifier = $sourceIdentifier
+			AutoReset = $autoReset
+			Interval = $interval
+		}
+		New-Object -Property $details -TypeName psobject
 	}
-
-	$thisModule = Get-Command Start-LightsMonitor
-	$boundAction = $thisModule.Module.NewBoundScriptBlock($action)
-
-	$start = Register-ObjectEvent $timer Elapsed -SourceIdentifier $sourceIdentifier -Action $boundAction -MessageData $arg
-	$timer.start()
 }
 

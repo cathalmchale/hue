@@ -1,10 +1,3 @@
-# CM: NOTE!
-# If first event fires, but second doesn't - try pulling the
-# includes up to the top of this file. Might need the events manager
-# functions to be exported in order to call from triggered events.
-
-
-
 
 #Includes
 #See bottom of file - don't want to export the includes.
@@ -22,110 +15,120 @@ $Lights = @{}
 
 
 function Set-Context {
-param(
-	[Parameter(Mandatory=$true)]
-	[string]$server,
-	[Parameter(Mandatory=$true)]
-	[string]$apiKey
-) 
+	[CmdletBinding()]
+    [OutputType([psobject])]
+	param(
+		[Parameter(Mandatory=$true)]
+		[string]$server,
+		[Parameter(Mandatory=$true)]
+		[string]$apiKey
+	) 
+	process {
+		Write-Verbose "Setting Hue.Script session context for server $server with api key $apiKey"
+		$expectedLight = $script:Const.Home.ExpectedLightName
+		$initialized = If ($script:Lights["$expectedLight"]) { $true } Else { $false }
+		Write-Debug "Session lights map previously initialized? $initialized"
 
-	$script:Context.Server = $server
-	$script:Context.ApiKey = $apiKey
+		$script:Context.Server = $server
+		$script:Context.ApiKey = $apiKey
+
+		$script:Context
+	}
 }
 
 
 function Start-LightsMonitor {
+	[CmdletBinding()]
+    [OutputType([psobject])]
+	param()
+	process {
+		$mainLoop = Get-EventSubscriber -SourceIdentifier $script:Const.Event.MainMonitorId -ErrorAction SilentlyContinue
+		If ($mainLoop)
+		{
+			Write-Verbose "Lights monitor event $($script:Const.Event.MainMonitorId) detected. No need to setup. Call Stop-LightsMonitor and then reinitialize, if desired."
+			return
+		}
 
-	$mainLoop = Get-EventSubscriber -SourceIdentifier $Const.Event.MainMonitorId -ErrorAction SilentlyContinue
-	If ($mainLoop)
-	{
-		Write-Host "Lights monitor already running"
-		return
+		$map = Get-LightsMap $script:Const $script:Context
+		$expectedLight = $script:Const.Home.ExpectedLightName
+		$initialized = If ($map["$expectedLight"]) { $true } Else { $false }
+		If (-Not $initialized) {
+			Write-Debug "Get-LightsMap called, but doesn't contain expected light $expectedLight"
+		}
+		$script:Lights = $map
+
+		Write-Verbose "Registering main events loop to monitor lights"
+		$action = {Watch-LightChanges $Event}
+		$details = Register-BoundLightEvent $script:Const.Event.MainMonitorId $script:Const.Event.MainMonitorInterval $action -Loop
+
+		$details
 	}
-
-
-	$map = Get-LightsMap $Const $Context
-	$script:Lights = $map
-
-
-	$action = {Watch-LightChanges $Event}
-	Register-BoundLightEvent $Const.Event.MainMonitorId 10000 $action -Loop
-
-
-<#
-	$timer = New-Object System.Timers.Timer -Property @{
-		Interval = 10000; Enabled = $true; AutoReset = $true
-	}
-
-	$action = {Watch-LightChanges $Event}
-
-	$thisModule = Get-Command Start-LightsMonitor
-	$boundAction = $thisModule.Module.NewBoundScriptBlock($action)
-
-	$start = Register-ObjectEvent $timer Elapsed -SourceIdentifier $Const.Event.MainMonitorId -Action $boundAction
-	$timer.start()
-#>
 
 }
 
 function Watch-LightChanges {
-param(
-	$event
-)
-
-	Write-Host "hello"
-	$event | Out-Host
-
-	Write-Host "Calling Test-RegisterAutoOff for $($Lights.hallFrontDoor) on $($Context.Server)"
+	[CmdletBinding()]
+    [OutputType([psobject])]
+	param(
+		$event
+	)
+	process {
+		Write-Verbose "Testing for auto-off events"
+		# TODO: Consider auto-off map in Const.psd1 to easily add new lights to this behavior.
 	
-	$shouldTurnOff = Test-RegisterAutoOff $Lights.hallFrontDoor $Const $Context
-	Write-Host "should $shouldTurnOff"
-	If ($shouldTurnOff)
-	{
+		$autoOffLghtId = $script:Lights.hallFrontDoor
 
-		$action = {Invoke-AutoOff $Event}
-		$id = Get-EventSourceId $Lights.hallFrontDoor $Const
-		Register-BoundLightEvent $id 10000 $action $Lights.hallFrontDoor
+		$shouldTurnOff = Test-RegisterAutoOff $autoOffLghtId $script:Const $script:Context
+		If ($shouldTurnOff)
+		{
+			Write-Verbose "Registering auto-off for light id $autoOffLghtId"
 
-<#
-		$timer = New-Object System.Timers.Timer -Property @{
-			Interval = 10000; Enabled = $true; AutoReset = $false
+			$action = {Invoke-AutoOff $Event}
+			$eventId = Get-EventSourceId $autoOffLghtId $script:Const
+			Register-BoundLightEvent $eventId $script:Const.Home.AutoOffDefaultInterval $action $autoOffLghtId
+
+			$details = @{
+				SourceIdentifier = $eventId
+				AutoReset = $false
+				Interval = $script:Const.Home.AutoOffDefaultInterval
+			}
+			New-Object -Property $details -TypeName psobject
 		}
-
-		$action = {Invoke-AutoOff $Event}
-
-		$thisModule = Get-Command Start-LightsMonitor
-		$boundAction = $thisModule.Module.NewBoundScriptBlock($action)
-
-		$id = Get-EventSourceId $Lights.hallFrontDoor $Const
-		$start = Register-ObjectEvent $timer Elapsed -SourceIdentifier $id -Action $boundAction -MessageData $Lights.hallFrontDoor
-		$timer.start()
-#>
-
 	}
 	
-
 }
 
 function Invoke-AutoOff {
-param(
-	$event
-)
+	[CmdletBinding()]
+    [OutputType([psobject])]
+	param(
+		$event
+	)
+	process {
+		Write-Verbose "Spawned event from $($script:Context.Server) for light $($event.MessageData)"
 
-	Write-Host "Spawned event from $($Context.Server) for light $($event.MessageData)"
-	$event | Out-Host
+		Get-EventSubscriber -SourceIdentifier $event.SourceIdentifier | Unregister-Event
 
-	Get-EventSubscriber -SourceIdentifier $event.SourceIdentifier | Unregister-Event
+		$url = $script:Const.Url.LightState -f $script:Context.Server, $script:Context.ApiKey, $event.MessageData
+		$body = $script:Const.Body.OnOff -f "false"
+		Invoke-RestMethod -Uri $url -Method PUT -Body $body
 
-	$url = $Const.Url.LightState -f $Context.Server, $Context.ApiKey, $event.MessageData
-	$body = $Const.Body.OnOff -f "false"
-	Invoke-RestMethod -Uri $url -Method PUT -Body $body
+		$event
+	}
 }
 
 function Stop-LightsMonitor {
+	[CmdletBinding()]
+	param()
+	process {
+		$m = Get-EventSubscriber | measure
+		Write-Debug "Clearing event subscriptions. Active count currently: $($m.Count)"
 
-	Get-EventSubscriber | Unregister-Event
+		Get-EventSubscriber | Unregister-Event
 
+		$m = Get-EventSubscriber | measure
+		Write-Debug "Unregister-Event called for all subscriptions. Active count currently: $($m.Count)"
+	}
 }
 
 
