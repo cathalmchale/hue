@@ -13,6 +13,8 @@ LONG DESCRIPTION
 
 EXAMPLES
 	Import-Module .\Hue.Script.psm1
+	Set-Context http://192.168.0.1 APIKEY-1234-5678
+	Start-LightsMonitor -Verbose
 
 KEYWORDS
     Philips Hue Smart IoT

@@ -58,19 +58,9 @@ function Start-LightsMonitor {
 		$script:Lights = $map
 
 		Write-Verbose "Registering main events loop to monitor lights"
-		# NOTE: Within the action script block, module and function variables are not in scope.
-		If ($VerbosePreference -and $DebugPreference) {
-			$action = {Watch-LightChanges $Event -Verbose -Debug}
-		}
-		ElseIf ($VerbosePreference) {
-			$action = {Watch-LightChanges $Event -Verbose}
-		}
-		ElseIf ($DebugPreference) {
-			$action = {Watch-LightChanges $Event -Debug}
-		}
-		Else {
-			$action = {Watch-LightChanges $Event}
-		}
+		# NOTE: Within the (async) action script block, module and function variables are not in scope.
+		# Building appropriate callback dynamically from a string instead.
+		$action = Get-EventCallback "Watch-LightChanges" -Verbose:$VerbosePreference -Debug:$DebugPreference
 
 		$details = Register-BoundLightEvent $script:Const.Event.MainMonitorId $script:Const.Event.MainMonitorInterval $action -Loop
 		$details
@@ -95,19 +85,9 @@ function Watch-LightChanges {
 		{
 			Write-Verbose "Registering auto-off for light id $autoOffLghtId"
 
-			# NOTE: Within the action script block, module variables are not in scope.
-			If ($VerbosePreference -and $DebugPreference) {
-				$action = {Invoke-AutoOff $Event -Verbose -Debug}
-			}
-			ElseIf ($VerbosePreference) {
-				$action = {Invoke-AutoOff $Event -Verbose}
-			}
-			ElseIf ($DebugPreference) {
-				$action = {Invoke-AutoOff $Event -Debug}
-			}
-			Else {
-				$action = {Invoke-AutoOff $Event}
-			}
+			# NOTE: Within the (async) action script block, module and function variables are not in scope.
+			# Building appropriate callback dynamically from a string instead.
+			$action = Get-EventCallback "Invoke-AutoOff" -Verbose:$VerbosePreference -Debug:$DebugPreference
 
 			$eventId = Get-EventSourceId $autoOffLghtId $script:Const
 			Register-BoundLightEvent $eventId $script:Const.Home.AutoOffDefaultInterval $action $autoOffLghtId

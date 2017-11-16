@@ -128,3 +128,24 @@ function Register-BoundLightEvent {
 	}
 }
 
+
+function Get-EventCallback {
+	[CmdletBinding()]
+    [OutputType([scriptblock])]
+	param(
+		[Parameter(Mandatory=$true)]
+		[string]$functionName
+	) 
+	process {
+		
+		$options = ""
+		If ($VerbosePreference) { $options = " -Verbose" }
+		If ($DebugPreference) { $options = $options + " -Debug" }
+
+		$scriptText = "{$functionName `$Event$options}"
+		$action = [Scriptblock]::Create($scriptText)
+		$action
+	}
+}
+
+
