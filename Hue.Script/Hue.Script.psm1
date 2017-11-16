@@ -68,6 +68,7 @@ function Start-LightsMonitor {
 
 }
 
+
 function Watch-LightChanges {
 	[CmdletBinding()]
     [OutputType([psobject])]
@@ -76,32 +77,38 @@ function Watch-LightChanges {
 	)
 	process {
 		Write-Verbose "Testing for auto-off events"
-		# TODO: Consider auto-off map in Const.psd1 to easily add new lights to this behavior.
-	
-		$autoOffLghtId = $script:Lights.hallFrontDoor
+		
+		$script:Const.Home.AutoOffLights | ForEach-Object {
 
-		$shouldTurnOff = Test-RegisterAutoOff $autoOffLghtId $script:Const $script:Context
-		If ($shouldTurnOff)
-		{
-			Write-Verbose "Registering auto-off for light id $autoOffLghtId"
+			$autoOffLghtId = $script:Lights."$_"
+			Write-Verbose "Testing for auto-off for Light $_ with ID $autoOffLghtId"
 
-			# NOTE: Within the (async) action script block, module and function variables are not in scope.
-			# Building appropriate callback dynamically from a string instead.
-			$action = Get-EventCallback "Invoke-AutoOff" -Verbose:$VerbosePreference -Debug:$DebugPreference
+			$shouldTurnOff = Test-RegisterAutoOff $autoOffLghtId $script:Const $script:Context
+			If ($shouldTurnOff)
+			{
+				Write-Verbose "Registering auto-off for Light $_ with ID $autoOffLghtId"
 
-			$eventId = Get-EventSourceId $autoOffLghtId $script:Const
-			Register-BoundLightEvent $eventId $script:Const.Home.AutoOffDefaultInterval $action $autoOffLghtId
+				# NOTE: Within the (async) action script block, module and function variables are not in scope.
+				# Building appropriate callback dynamically from a string instead.
+				$action = Get-EventCallback "Invoke-AutoOff" -Verbose:$VerbosePreference -Debug:$DebugPreference
 
-			$details = @{
-				SourceIdentifier = $eventId
-				AutoReset = $false
-				Interval = $script:Const.Home.AutoOffDefaultInterval
+				$eventId = Get-EventSourceId $autoOffLghtId $script:Const
+				Register-BoundLightEvent $eventId $script:Const.Home.AutoOffDefaultInterval $action $autoOffLghtId
+
+				$details = @{
+					SourceIdentifier = $eventId
+					AutoReset = $false
+					Interval = $script:Const.Home.AutoOffDefaultInterval
+				}
+				New-Object -Property $details -TypeName psobject
 			}
-			New-Object -Property $details -TypeName psobject
+
 		}
+	
 	}
 	
 }
+
 
 function Invoke-AutoOff {
 	[CmdletBinding()]
@@ -121,6 +128,7 @@ function Invoke-AutoOff {
 		$event
 	}
 }
+
 
 function Stop-LightsMonitor {
 	[CmdletBinding()]

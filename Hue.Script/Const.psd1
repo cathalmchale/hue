@@ -2,6 +2,10 @@
 	Home = @{
 		ExpectedLightName = "hallFrontDoor"
 		AutoOffDefaultInterval = 10000
+		AutoOffLights = @(
+			"hallFrontDoor",
+			"hallKitchen"
+		)
 	}
 
 	Url = @{
