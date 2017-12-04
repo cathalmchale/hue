@@ -80,20 +80,21 @@ function Watch-LightChanges {
 		
 		$script:Const.Home.AutoOffLights | ForEach-Object {
 
-			$autoOffLghtId = $script:Lights."$_"
-			Write-Verbose "Testing for auto-off for Light $_ with ID $autoOffLghtId"
+			$autoOffLightId = $script:Lights."$_"
+			Write-Verbose "Testing auto-off for Light $_ with ID $autoOffLightId"
 
-			$shouldTurnOff = Test-RegisterAutoOff $autoOffLghtId $script:Const $script:Context
+			$shouldTurnOff = Test-RegisterAutoOff $autoOffLightId $script:Const $script:Context
 			If ($shouldTurnOff)
 			{
-				Write-Verbose "Registering auto-off for Light $_ with ID $autoOffLghtId"
+				Write-Verbose "Registering auto-off for Light $_ with ID $autoOffLightId"
 
 				# NOTE: Within the (async) action script block, module and function variables are not in scope.
-				# Building appropriate callback dynamically from a string instead.
+				# Instead translate local variables to a static script text which will work regardless of when invoked.
+				# The $Event variable in Get-EventCallback is always available to async timer events.
 				$action = Get-EventCallback "Invoke-AutoOff" -Verbose:$VerbosePreference -Debug:$DebugPreference
 
-				$eventId = Get-EventSourceId $autoOffLghtId $script:Const
-				Register-BoundLightEvent $eventId $script:Const.Home.AutoOffDefaultInterval $action $autoOffLghtId
+				$eventId = Get-EventSourceId $autoOffLightId $script:Const
+				Register-BoundLightEvent $eventId $script:Const.Home.AutoOffDefaultInterval $action $autoOffLightId
 
 				$details = @{
 					SourceIdentifier = $eventId

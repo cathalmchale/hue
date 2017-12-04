@@ -142,7 +142,7 @@ function Get-EventCallback {
 		If ($VerbosePreference) { $options = " -Verbose" }
 		If ($DebugPreference) { $options = $options + " -Debug" }
 
-		$scriptText = "{$functionName `$Event$options}"
+		$scriptText = "$functionName `$Event$options"
 		$action = [Scriptblock]::Create($scriptText)
 		$action
 	}
