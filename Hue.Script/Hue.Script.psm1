@@ -40,7 +40,10 @@ function Set-Context {
 function Start-LightsMonitor {
 	[CmdletBinding()]
     [OutputType([psobject])]
-	param()
+	param(
+		[Alias('KeepAlive')]
+		[switch]$loop
+	)
 	process {
 		$mainLoop = Get-EventSubscriber -SourceIdentifier $script:Const.Event.MainMonitorId -ErrorAction SilentlyContinue
 		If ($mainLoop)
@@ -64,6 +67,16 @@ function Start-LightsMonitor {
 
 		$details = Register-BoundLightEvent $script:Const.Event.MainMonitorId $script:Const.Event.MainMonitorInterval $action -Loop
 		$details
+	}
+	end {
+		while ($true -And $loop) {
+			Write-Host "Press any key to stop the lights monitor"
+			if ($host.UI.RawUI.KeyAvailable) {
+				Stop-LightsMonitor
+				break
+			}
+			Start-Sleep -Milliseconds 2000
+		}
 	}
 
 }
