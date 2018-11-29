@@ -25,14 +25,15 @@ function Set-Context {
 	) 
 	process {
 		Write-Verbose "Setting Hue.Script session context for server $server with api key $apiKey"
-		$expectedLight = $script:Const.Home.ExpectedLightName
+		$expectedLight = Get-ExpectedLightName
 		$initialized = If ($script:Lights["$expectedLight"]) { $true } Else { $false }
 		Write-Debug "Session lights map previously initialized? $initialized"
 
 		$script:Context.Server = $server
 		$script:Context.ApiKey = $apiKey
 
-		$script:Context
+		$copy = $script:Context.PsObject.Copy()
+		$copy
 	}
 }
 
@@ -53,7 +54,7 @@ function Start-LightsMonitor {
 		}
 
 		$map = Get-LightsMap $script:Const $script:Context
-		$expectedLight = $script:Const.Home.ExpectedLightName
+		$expectedLight = Get-ExpectedLightName
 		$initialized = If ($map["$expectedLight"]) { $true } Else { $false }
 		If (-Not $initialized) {
 			Write-Debug "Get-LightsMap called, but doesn't contain expected light $expectedLight"
@@ -166,6 +167,47 @@ function Stop-LightsMonitor {
 	*****************************************************************************************************************
 #>
 Export-ModuleMember -Function *
+
+
+
+<#  *****************************************************************************************************************
+	* Private helper methods
+	*****************************************************************************************************************
+#>
+
+# Encapsulated data to aid unit testing
+function Get-ExpectedLightName {
+	[CmdletBinding()]
+	[OutputType([String])]
+	param()
+	process {
+		$expectedLight = $script:Const.Home.ExpectedLightName
+		$expectedLight
+	}
+}
+
+function Get-InitializedLightsMap {
+	[CmdletBinding()]
+	[OutputType([psobject])]
+	param()
+	process {
+		
+		$copy = $script:Lights.PsObject.Copy()
+		$copy
+	}
+}
+
+function Set-InitializedLightsMap {
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory=$true)]
+		[psobject]$map
+	)
+	process {
+		$script:Lights = $map
+		$map
+	}
+}
 
 
 
