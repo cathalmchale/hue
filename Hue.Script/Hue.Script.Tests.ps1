@@ -1,5 +1,5 @@
 Remove-Module Hue.Script -ErrorAction SilentlyContinue
-Import-Module Hue.Script
+Import-Module Hue.Script.psm1
 
 Describe "CallSetContext" {
 
