@@ -43,7 +43,7 @@ function Start-LightsMonitor {
     [OutputType([psobject])]
 	param(
 		[Alias('KeepAlive')]
-		[switch]$loop
+		[switch]$stayAlive
 	)
 	process {
 		$mainLoop = Get-EventSubscriber -SourceIdentifier $script:Const.Event.MainMonitorId -ErrorAction SilentlyContinue
@@ -70,7 +70,7 @@ function Start-LightsMonitor {
 		$details
 	}
 	end {
-		while ($true -And $loop) {
+		while ($true -And $stayAlive) {
 			Write-Host "Press any key to stop the lights monitor"
 			if ($host.UI.RawUI.KeyAvailable) {
 				Stop-LightsMonitor
