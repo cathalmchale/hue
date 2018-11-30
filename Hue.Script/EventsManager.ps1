@@ -1,3 +1,8 @@
+<#
+All these functions have been pasted at the bottom of Hue.Script.psm1.
+Need to figure out how to use modules properly so that I can define a 
+dependency on other module files (e.g. with extra helper functions) and 
+have them included when the Hue.Script module is imported.
 
 function Get-LightsMap {
 	[CmdletBinding()]
@@ -149,3 +154,4 @@ function Get-EventCallback {
 }
 
 
+#>
