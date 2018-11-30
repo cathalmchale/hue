@@ -13,6 +13,8 @@ $Context = @{
 
 $Lights = @{}
 
+$StayAlive = $false
+
 
 function Set-Context {
 	[CmdletBinding()]
@@ -45,6 +47,9 @@ function Start-LightsMonitor {
 		[Alias('KeepAlive')]
 		[switch]$stayAlive
 	)
+	begin {
+		$script:StayAlive = $stayAlive
+	}
 	process {
 		$mainLoop = Get-EventSubscriber -SourceIdentifier $script:Const.Event.MainMonitorId -ErrorAction SilentlyContinue
 		If ($mainLoop)
@@ -70,7 +75,7 @@ function Start-LightsMonitor {
 		$details
 	}
 	end {
-		while ($true -And $stayAlive) {
+		while ($true -And $script:StayAlive) {
 			Write-Host "Press any key to stop the lights monitor"
 			if ($host.UI.RawUI.KeyAvailable) {
 				Stop-LightsMonitor
@@ -162,6 +167,16 @@ function Stop-LightsMonitor {
 
 
 
+
+
+#TODO: make private if works
+
+function Exit-MainThread {
+	$script:StayAlive = $false
+}
+
+
+
 <#  *****************************************************************************************************************
 	* Export the API / Facade
 	*****************************************************************************************************************
@@ -208,6 +223,8 @@ function Set-InitializedLightsMap {
 		$map
 	}
 }
+
+
 
 
 

@@ -1,5 +1,11 @@
+param(
+	[Parameter(Mandatory=$true)]
+	[string]$rootPath
+) 
+
+
 Remove-Module Hue.Script -ErrorAction SilentlyContinue
-Import-Module Hue.Script.psm1
+Import-Module "$rootPath\Hue.Script.psm1"
 
 Describe "CallSetContext" {
 
@@ -153,11 +159,13 @@ Describe "CallStartLightsMonitor" {
 		Mock -ModuleName Hue.Script Get-EventCallback { return { "dummy script block" } }
 		Mock -ModuleName Hue.Script Register-BoundLightEvent { return "final return value" }
 		Mock -ModuleName Hue.Script Stop-LightsMonitor {}
+		Mock -ModuleName Hue.Script Start-Sleep { Exit-MainThread }
 		
 		# NOTE: Even though the -KeepAlive switch should cause the command to loop infinitely;
 		# in Pester "$host.UI.RawUI.KeyAvailable" appears to evaluate to true and so the loop breaks immediately.
         $result = Start-LightsMonitor -KeepAlive
-
+		
+		
 		It "returns result at end of function" {
 			$result | Should -Be "final return value"
 		}
