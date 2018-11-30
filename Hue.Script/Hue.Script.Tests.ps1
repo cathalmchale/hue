@@ -11,7 +11,7 @@ Describe "CallSetContext" {
 
     Context "When first called" {
         
-        $result = Set-Context http://localhost API/1234
+        $result = Set-Context http://localhost API/1234 $rootPath
 
         It "returns the input parameters as object" {
             $result.Server | Should -Be "http://localhost"
@@ -30,11 +30,11 @@ Describe "CallSetContext" {
 			$mockLightsMap = @{}
 			$mockLightsMap."$expectedLight" = "1"
 			
-			$firstCall = Set-Context http://localhost API/1234 -Debug
+			$firstCall = Set-Context http://localhost API/1234 $rootPath -Debug
 			# Now fake lights map initialization.
 			Set-InitializedLightsMap $mockLightsMap
 			# Call again.
-			$subsequentCall = Set-Context http://localhost/2 API/1234/2 -Debug
+			$subsequentCall = Set-Context http://localhost/2 API/1234/2 $rootPath -Debug
 
 			It "first call finds empty lights map" {
 				Assert-MockCalled Write-Debug -Times 1 -ParameterFilter {
