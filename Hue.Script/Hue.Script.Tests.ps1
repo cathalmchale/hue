@@ -4,6 +4,7 @@ param(
 ) 
 
 
+$global:hueModuleRootPathForTests = $rootPath
 Remove-Module Hue.Script -ErrorAction SilentlyContinue
 Import-Module "$rootPath\Hue.Script.psm1"
 
@@ -16,12 +17,14 @@ Describe "CallSetContext" {
         It "returns the input parameters as object" {
             $result.Server | Should -Be "http://localhost"
             $result.ApiKey | Should -Be "API/1234"
+			$result.RootPath | Should -Be $rootPath
         }
     }
 	
 	Context "When already initialized" {
         
 		# InModuleScope can access non-exported functions.
+		# But note that it can't access the test script param $rootPath - had to create a global var for this.
 		InModuleScope Hue.Script {
 		
 			Mock Write-Debug {}
@@ -30,11 +33,11 @@ Describe "CallSetContext" {
 			$mockLightsMap = @{}
 			$mockLightsMap."$expectedLight" = "1"
 			
-			$firstCall = Set-Context http://localhost API/1234 $rootPath -Debug
+			$firstCall = Set-Context http://localhost API/1234 $global:hueModuleRootPathForTests -Debug
 			# Now fake lights map initialization.
 			Set-InitializedLightsMap $mockLightsMap
 			# Call again.
-			$subsequentCall = Set-Context http://localhost/2 API/1234/2 $rootPath -Debug
+			$subsequentCall = Set-Context http://localhost/2 API/1234/2 -Debug
 
 			It "first call finds empty lights map" {
 				Assert-MockCalled Write-Debug -Times 1 -ParameterFilter {
@@ -51,11 +54,13 @@ Describe "CallSetContext" {
 			It "context is set" {
 				$firstCall.Server | Should -Be "http://localhost"
 				$firstCall.ApiKey | Should -Be "API/1234"
+				$firstCall.RootPath | Should -Be $global:hueModuleRootPathForTests
 			}
 			
 			It "context is overridden" {
 				$subsequentCall.Server | Should -Be "http://localhost/2"
 				$subsequentCall.ApiKey | Should -Be "API/1234/2"
+				$subsequentCall.RootPath | Should -Be "."
 			}
 		
 		}
