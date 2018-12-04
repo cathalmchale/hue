@@ -17,3 +17,4 @@ Set-Context http://192.168.0.1 APIKEY-1234-5678
 Start-LightsMonitor -Verbose
 ```
  
+[![Build status](https://saftrare.visualstudio.com/GitRnD/_apis/build/status/HueTests)](https://saftrare.visualstudio.com/GitRnD/_build/latest?definitionId=11)
