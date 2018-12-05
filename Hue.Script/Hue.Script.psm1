@@ -184,12 +184,6 @@ function Stop-LightsMonitor {
 
 
 
-#TODO: make private if works
-
-function Exit-MainThread {
-	$script:StayAlive = $false
-}
-
 
 
 <#  *****************************************************************************************************************
@@ -239,6 +233,9 @@ function Set-InitializedLightsMap {
 	}
 }
 
+function Exit-MainThread {
+	$script:StayAlive = $false
+}
 
 
 

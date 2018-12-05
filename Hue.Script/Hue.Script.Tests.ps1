@@ -155,31 +155,35 @@ Describe "CallStartLightsMonitor" {
 	
 	Context "Infinite loop for Powershell Core on Pi" {
         
-		Mock -ModuleName Hue.Script Write-Host {} -Verifiable -ParameterFilter {
-            $Object -eq 'Press any key to stop the lights monitor'
-        }
-		Mock -ModuleName Hue.Script Write-Debug {}
-		Mock -ModuleName Hue.Script Get-EventSubscriber { return $null }
-		Mock -ModuleName Hue.Script Get-LightsMap { return @{} }
-		Mock -ModuleName Hue.Script Get-EventCallback { return { "dummy script block" } }
-		Mock -ModuleName Hue.Script Register-BoundLightEvent { return "final return value" }
-		Mock -ModuleName Hue.Script Stop-LightsMonitor {}
-		Mock -ModuleName Hue.Script Start-Sleep { Exit-MainThread }
+		# InModuleScope can access non-exported functions.
+		InModuleScope Hue.Script {
 		
-		# NOTE: Even though the -KeepAlive switch should cause the command to loop infinitely;
-		# in Pester "$host.UI.RawUI.KeyAvailable" appears to evaluate to true and so the loop breaks immediately.
-        $result = Start-LightsMonitor -KeepAlive
+			Mock Write-Host {} -Verifiable -ParameterFilter {
+				$Object -eq 'Press any key to stop the lights monitor'
+			}
+			Mock Write-Debug {}
+			Mock Get-EventSubscriber { return $null }
+			Mock Get-LightsMap { return @{} }
+			Mock Get-EventCallback { return { "dummy script block" } }
+			Mock Register-BoundLightEvent { return "final return value" }
+			Mock Stop-LightsMonitor {}
+			Mock Start-Sleep { Exit-MainThread }
+			
+			# NOTE: Even though the -KeepAlive switch should cause the command to loop infinitely;
+			# in Pester "$host.UI.RawUI.KeyAvailable" appears to evaluate to true and so the loop breaks immediately.
+			$result = Start-LightsMonitor -KeepAlive
+			
+			
+			It "returns result at end of function" {
+				$result | Should -Be "final return value"
+			}
+			
+			It "progresses to the infinite loop" {
+				# Verify that write host called with expected message
+				Assert-VerifiableMock
+			}
 		
-		
-		It "returns result at end of function" {
-			$result | Should -Be "final return value"
 		}
-		
-		It "progresses to the infinite loop" {
-			# Verify that write host called with expected message
-			Assert-VerifiableMock
-		}
-
     }
 	
 }
