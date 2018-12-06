@@ -1,10 +1,14 @@
 param(
-	[Parameter(Mandatory=$true)]
 	[string]$rootPath
 ) 
 
-
+# NOTE: No longer need root path, now that using modules properly (manifest + imported from PSModulePath).
+# Leaving as an optional param for documentation only.
+# E.g. passed to test file via Pester invoke: >Invoke-Pester -Script @{Path='C:\dev\saftrare\IoT\hue\Hue.Script'; Parameters=@{rootPath='C:\dev\saftrare\IoT\hue\Hue.Script'}}
+# The param is then copied to a global for use within "InModuleScope" - otherwise can use $rootPath directly.
 $global:hueModuleRootPathForTests = $rootPath
+
+
 Remove-Module Hue.Script -ErrorAction SilentlyContinue
 Import-Module Hue.Script
 
@@ -12,12 +16,11 @@ Describe "CallSetContext" {
 
     Context "When first called" {
         
-        $result = Set-Context http://localhost API/1234 $rootPath
+        $result = Set-Context http://localhost API/1234
 
         It "returns the input parameters as object" {
             $result.Server | Should -Be "http://localhost"
             $result.ApiKey | Should -Be "API/1234"
-			$result.RootPath | Should -Be $rootPath
         }
     }
 	
@@ -33,7 +36,7 @@ Describe "CallSetContext" {
 			$mockLightsMap = @{}
 			$mockLightsMap."$expectedLight" = "1"
 			
-			$firstCall = Set-Context http://localhost API/1234 $global:hueModuleRootPathForTests -Debug
+			$firstCall = Set-Context http://localhost API/1234 -Debug
 			# Now fake lights map initialization.
 			Set-InitializedLightsMap $mockLightsMap
 			# Call again.
@@ -54,13 +57,11 @@ Describe "CallSetContext" {
 			It "context is set" {
 				$firstCall.Server | Should -Be "http://localhost"
 				$firstCall.ApiKey | Should -Be "API/1234"
-				$firstCall.RootPath | Should -Be $global:hueModuleRootPathForTests
 			}
 			
 			It "context is overridden" {
 				$subsequentCall.Server | Should -Be "http://localhost/2"
 				$subsequentCall.ApiKey | Should -Be "API/1234/2"
-				$subsequentCall.RootPath | Should -Be "."
 			}
 		
 		}
