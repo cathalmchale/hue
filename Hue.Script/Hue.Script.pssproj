@@ -35,7 +35,10 @@
   <ItemGroup>
     <Compile Include="Const.psd1" />
     <Compile Include="EventsManager.ps1" />
+    <Compile Include="EventsManager.psm1" />
+    <Compile Include="Hue.Script.psd1" />
     <Compile Include="Hue.Script.psm1" />
+    <Compile Include="Hue.Script.Tests.ps1" />
     <Compile Include="Program.ps1" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />

@@ -6,7 +6,7 @@ param(
 
 $global:hueModuleRootPathForTests = $rootPath
 Remove-Module Hue.Script -ErrorAction SilentlyContinue
-Import-Module "$rootPath\Hue.Script.psm1"
+Import-Module Hue.Script
 
 Describe "CallSetContext" {
 
