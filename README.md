@@ -1,3 +1,5 @@
+[![Build status](https://saftrare.visualstudio.com/GitRnD/_apis/build/status/HueTests)](https://saftrare.visualstudio.com/GitRnD/_build/latest?definitionId=11)
+
 # hue
 Powershell module to interact with Philips Hue hub.
 
