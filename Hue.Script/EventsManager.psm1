@@ -114,8 +114,8 @@ function Register-BoundLightEvent {
 			Interval = $interval; Enabled = $true; AutoReset = $autoReset
 		}
 
-		$thisModule = Get-Command Start-LightsMonitor
-		$boundAction = $thisModule.Module.NewBoundScriptBlock($action)
+		$thisModule = Get-Module Hue.Script
+		$boundAction = $thisModule.NewBoundScriptBlock($action)
 
 		$start = Register-ObjectEvent $timer Elapsed -SourceIdentifier $sourceIdentifier -Action $boundAction -MessageData $arg
 		$timer.start()
