@@ -40,6 +40,7 @@
     <Compile Include="Hue.Script.psm1" />
     <Compile Include="Hue.Script.Tests.ps1" />
     <Compile Include="Program.ps1" />
+    <Compile Include="UnitTestHelpers.psm1" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Target Name="Build" />

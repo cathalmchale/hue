@@ -42,6 +42,10 @@ Describe "CallSetContext" {
 			# Call again.
 			$subsequentCall = Set-Context http://localhost/2 API/1234/2 -Debug
 
+			It "expected light is initialized" {
+				$expectedLight | Should -Not -Be $null
+			}
+			
 			It "first call finds empty lights map" {
 				Assert-MockCalled Write-Debug -Times 1 -ParameterFilter {
 					$Message -match "^.*False$"
@@ -134,12 +138,12 @@ Describe "CallStartLightsMonitor" {
 			$result = Start-LightsMonitor
 			
 
-			It "finds expected light" {
+			It "finds expected light" {			
 				# Below asserts that mock called. 
 				# Above see that mock returns lights map with the expected light.
-				Assert-MockCalled -ModuleName Hue.Script Get-LightsMap -Times 1
+				Assert-MockCalled Get-LightsMap -Times 1
 				# And, unlike context "Invalid lights map", no warning debug message is emitted.
-				Assert-MockCalled -ModuleName Hue.Script Write-Debug -Times 0
+				Assert-MockCalled Write-Debug -Times 0
 			}
 			
 			It "returns result at end of function" {
