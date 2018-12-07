@@ -14,8 +14,8 @@ This Powershell module interacts with the Hue hub and provides some basic functi
 Review the Const.psd1 file and edit to suit your home. Then import the module, set context for your hub / API key and start the main monitor thread.
  
 ```powershell
-Import-Module .\Hue.Script.psm1
+Import-Module Hue.Script
 Set-Context http://192.168.0.1 APIKEY-1234-5678
-Start-LightsMonitor -Verbose
+Start-LightsMonitor -Verbose #-KeepAlive (use KeepAlive for non-windows hosts e.g. Raspbian)
 ```
  
