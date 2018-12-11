@@ -47,13 +47,13 @@ Describe "CallSetContext" {
 			}
 			
 			It "first call finds empty lights map" {
-				Assert-MockCalled Write-Debug -Times 1 -ParameterFilter {
+				Assert-MockCalled Write-Debug -Exactly -Times 1 -ParameterFilter {
 					$Message -match "^.*False$"
 				}
 			}
 			
 			It "subsequent call finds lights map with expected member" {
-				Assert-MockCalled Write-Debug -Times 1 -ParameterFilter {
+				Assert-MockCalled Write-Debug -Exactly -Times 1 -ParameterFilter {
 					$Message -match "^.*True$"
 				}
 			}
@@ -84,7 +84,7 @@ Describe "CallStartLightsMonitor" {
         $result = Start-LightsMonitor
 
 		It "detects running and exits" {
-			Assert-MockCalled -ModuleName Hue.Script Write-Verbose -Times 1
+			Assert-MockCalled -ModuleName Hue.Script Write-Verbose -Exactly -Times 1
 			$result | Should -Be $null
 		}
 
@@ -143,7 +143,7 @@ Describe "CallStartLightsMonitor" {
 				# Above see that mock returns lights map with the expected light.
 				Assert-MockCalled Get-LightsMap -Times 1
 				# And, unlike context "Invalid lights map", no warning debug message is emitted.
-				Assert-MockCalled Write-Debug -Times 0
+				Assert-MockCalled Write-Debug -Exactly -Times 0
 			}
 			
 			It "returns result at end of function" {
@@ -193,3 +193,74 @@ Describe "CallStartLightsMonitor" {
 	
 }
 
+
+# NOTE: Watch-LightChanges normally called on background thread. But the calling context is actually irrelevant
+#  because the only context used is that of the module - see $thisModule.NewBoundScriptBlock($action).
+# So I can call and test directly - the function doesn't even use the input $event object.
+Describe "CallWatchLightChanges" {
+
+	Context "No auto-off lights specified" {
+		# InModuleScope can access non-exported functions.
+		InModuleScope Hue.Script {
+			# Arrange
+			Mock Write-Verbose {}
+			$mockConstantsMap = @{
+				Home = @{
+					AutoOffLights = @()
+				}
+			}
+			
+			# Act
+			Set-InitializedConstantsMap $mockConstantsMap
+			$result = Watch-LightChanges
+
+			# Assert
+			It "null pipeline as no auto-off events checked" {
+				$result | Should -BeNullOrEmpty
+			}
+
+			It "no auto-off logic executed" {
+				Assert-MockCalled Write-Verbose -Exactly -Times 1
+			}
+
+		}
+	}
+
+	Context "Auto-off light configured" {
+		# InModuleScope can access non-exported functions.
+		InModuleScope Hue.Script {
+			# Arrange
+			Mock Write-Verbose {}
+			Mock Test-RegisterAutoOff { return $true }
+			Mock Get-EventCallback { return { "dummy script block" } } -Verifiable
+			Mock Get-EventSourceId { return "1234" } -Verifiable
+			Mock Register-BoundLightEvent {} -Verifiable
+			$expectedLight = Get-ExpectedLightName
+			$mockLightsMap = @{}
+			$mockLightsMap."$expectedLight" = "1"
+			$mockConstantsMap = @{
+				Home = @{
+					AutoOffLights = @("$expectedLight")
+					AutoOffDefaultInterval = 10000
+				}
+			}
+			
+			# Act
+			Set-InitializedLightsMap $mockLightsMap
+			Set-InitializedConstantsMap $mockConstantsMap
+			$result = Watch-LightChanges
+
+			# Assert
+			It "pipeline includes auto-off event" {
+				$result | Should -Not -BeNullOrEmpty
+			}
+
+			It "all event functions called" {
+				Assert-MockCalled Write-Verbose -Times 3
+				Assert-VerifiableMock
+			}
+
+		}
+	}
+
+}

@@ -43,6 +43,18 @@ function Set-InitializedLightsMap {
 	}
 }
 
+function Set-InitializedConstantsMap {
+	[CmdletBinding()]
+	param(
+		[Parameter(Mandatory=$true)]
+		[psobject]$map
+	)
+	process {
+		Set-ModuleVariable "Const" $map
+		$map
+	}
+}
+
 function Exit-MainThread {
 
 	Set-ModuleVariable "StayAlive" $false
