@@ -226,7 +226,7 @@ Describe "CallWatchLightChanges" {
 		}
 	}
 
-	Context "Auto-off light configured" {
+	Context "Auto-off light configured with events mocked" {
 		# InModuleScope can access non-exported functions.
 		InModuleScope Hue.Script {
 			# Arrange
@@ -258,6 +258,84 @@ Describe "CallWatchLightChanges" {
 			It "all event functions called" {
 				Assert-MockCalled Write-Verbose -Times 3
 				Assert-VerifiableMock
+			}
+
+		}
+	}
+
+	Context "Verify Test-RegisterAutoOff input data" {
+		# InModuleScope can access non-exported functions.
+		InModuleScope Hue.Script {
+			# Arrange
+			Mock Write-Verbose {}
+			Mock Test-RegisterAutoOff { return $false } -Verifiable -ParameterFilter {
+				$lightId -eq "1" -and 
+					$const.Home.AutoOffDefaultInterval -eq 5000 -and
+					$context.Server -eq "http://localhost/test-input"
+			}
+			$expectedLight = Get-ExpectedLightName
+			$mockLightsMap = @{}
+			$mockLightsMap."$expectedLight" = "1"
+			$mockConstantsMap = @{
+				Home = @{
+					AutoOffLights = @("$expectedLight")
+					AutoOffDefaultInterval = 5000
+				}
+			}
+			
+			# Act
+			Set-Context "http://localhost/test-input" "API/1234"
+			Set-InitializedLightsMap $mockLightsMap
+			Set-InitializedConstantsMap $mockConstantsMap
+			$result = Watch-LightChanges
+
+			# Assert
+			It "test light check evaluates to false" {
+				$result | Should -BeNullOrEmpty
+			}
+
+			It "test light input data as expected" {
+				Assert-VerifiableMock
+			}
+
+		}
+	}
+
+	Context "Auto-off light event fires" {
+		# InModuleScope can access non-exported functions.
+		InModuleScope Hue.Script {
+			# Arrange
+			Mock Write-Verbose {}
+			Mock Test-RegisterAutoOff { return $true }
+			Mock Invoke-AutoOff {
+				$global:autoOffBackgroundEventFires = $true
+			}
+			$expectedLight = Get-ExpectedLightName
+			$mockLightsMap = @{}
+			$mockLightsMap."$expectedLight" = "1"
+			$mockConstantsMap = @{
+				Home = @{
+					AutoOffLights = @("$expectedLight")
+					AutoOffDefaultInterval = 500
+				}
+				Event = @{
+					SingleLightId = "HueSingleLightEvent{0}"
+				}
+			}
+			
+			# Act
+			Set-Context "http://localhost/test-bkgrnd-event" "API/1234"
+			Set-InitializedLightsMap $mockLightsMap
+			Set-InitializedConstantsMap $mockConstantsMap
+			$result = Watch-LightChanges
+			# Sleep to give time for background event to fire
+			Start-Sleep -Milliseconds 2000
+
+			# Assert
+			It "background event fired" {
+				Assert-MockCalled Write-Verbose -Exactly -Times 1 -ParameterFilter {
+					$Message -eq "Spawned event from http://localhost/test-bkgrnd-event for light 1"
+				}
 			}
 
 		}
