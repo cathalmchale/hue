@@ -307,9 +307,6 @@ Describe "CallWatchLightChanges" {
 			# Arrange
 			Mock Write-Verbose {}
 			Mock Test-RegisterAutoOff { return $true }
-			Mock Invoke-AutoOff {
-				$global:autoOffBackgroundEventFires = $true
-			}
 			$expectedLight = Get-ExpectedLightName
 			$mockLightsMap = @{}
 			$mockLightsMap."$expectedLight" = "1"
