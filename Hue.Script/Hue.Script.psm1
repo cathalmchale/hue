@@ -12,7 +12,7 @@ $StayAlive = $false
 
 
 function Set-Context {
-	[CmdletBinding()]
+	[CmdletBinding(SupportsShouldProcess, ConfirmImpact='Low')]
     [OutputType([psobject])]
 	param(
 		[Parameter(Mandatory=$true)]
@@ -27,8 +27,10 @@ function Set-Context {
 		$initialized = If ($script:Lights["$expectedLight"]) { $true } Else { $false }
 		Write-Debug "Session lights map previously initialized? $initialized"
 
-		$script:Context.Server = $server
-		$script:Context.ApiKey = $apiKey
+		if ($PSCmdlet.ShouldProcess("Script module Context", "Update")) {
+			$script:Context.Server = $server
+			$script:Context.ApiKey = $apiKey
+		}
 
 		$copy = $script:Context.PsObject.Copy()
 		$copy
@@ -150,12 +152,12 @@ function Stop-LightsMonitor {
 	[CmdletBinding()]
 	param()
 	process {
-		$m = Get-EventSubscriber | measure
+		$m = Get-EventSubscriber | Measure-Object
 		Write-Debug "Clearing event subscriptions. Active count currently: $($m.Count)"
 
 		Get-EventSubscriber | Unregister-Event
 
-		$m = Get-EventSubscriber | measure
+		$m = Get-EventSubscriber | Measure-Object
 		Write-Debug "Unregister-Event called for all subscriptions. Active count currently: $($m.Count)"
 	}
 }

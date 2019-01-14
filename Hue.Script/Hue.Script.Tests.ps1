@@ -36,11 +36,11 @@ Describe "CallSetContext" {
 			$mockLightsMap = @{}
 			$mockLightsMap."$expectedLight" = "1"
 			
-			$firstCall = Set-Context http://localhost API/1234 -Debug
+			$firstCall = Set-Context http://localhost API/1234 -Debug -Confirm:$false
 			# Now fake lights map initialization.
 			Set-InitializedLightsMap $mockLightsMap
 			# Call again.
-			$subsequentCall = Set-Context http://localhost/2 API/1234/2 -Debug
+			$subsequentCall = Set-Context http://localhost/2 API/1234/2 -Debug -Confirm:$false
 
 			It "expected light is initialized" {
 				$expectedLight | Should -Not -Be $null
