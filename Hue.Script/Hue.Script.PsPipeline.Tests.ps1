@@ -14,3 +14,31 @@ Describe "CallSetContext" {
     }
 
 }
+
+Describe "CallStartLightsMonitor" {
+
+    Context "With WhatIf switch" {
+		
+		# InModuleScope can access non-exported functions.
+		InModuleScope Hue.Script {
+		
+			$expectedLight = Get-ExpectedLightName
+			$mockLightsMap = @{}
+			$mockLightsMap."$expectedLight" = "1"
+			
+			Mock Write-Debug {}
+			Mock Get-EventSubscriber { return $null }
+			Mock Get-LightsMap { return $mockLightsMap }
+			Mock Get-EventCallback { return { "dummy script block" } }
+			Mock Register-BoundLightEvent { return "final return value" }
+			
+			Start-LightsMonitor -WhatIf
+            
+			It "impacting event threading code not executed" {
+				Assert-MockCalled Register-BoundLightEvent -Exactly -Times 0
+			}
+			
+		}
+	}
+
+}

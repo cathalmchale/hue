@@ -39,7 +39,7 @@ function Set-Context {
 
 
 function Start-LightsMonitor {
-	[CmdletBinding()]
+	[CmdletBinding(SupportsShouldProcess, ConfirmImpact='Medium')]
     [OutputType([psobject])]
 	param(
 		[Alias('KeepAlive')]
@@ -69,8 +69,10 @@ function Start-LightsMonitor {
 		# Building appropriate callback dynamically from a string instead.
 		$action = Get-EventCallback "Watch-LightChanges" -Verbose:$VerbosePreference -Debug:$DebugPreference
 
-		$details = Register-BoundLightEvent $script:Const.Event.MainMonitorId $script:Const.Event.MainMonitorInterval $action -Loop
-		$details
+		if ($PSCmdlet.ShouldProcess("Lights Monitor", "Start background thread")) {
+			$details = Register-BoundLightEvent $script:Const.Event.MainMonitorId $script:Const.Event.MainMonitorInterval $action -Loop
+			$details
+		}
 	}
 	end {
 		while ($true -And $script:StayAlive) {
