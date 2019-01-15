@@ -6,53 +6,40 @@
  - so it can access private members of the module
  - see awkward syntax in functions - but seems fine for testing only!
 #>
-
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseShouldProcessForStateChangingFunctions", "", Scope="Function", Target="*")]
+Param()
 
 
 # Encapsulated data to aid unit testing
 
 function Get-ExpectedLightName {
-	[CmdletBinding()]
-	[OutputType([String])]
-	param()
-	process {
-		$const = Get-CopyOfModuleVariable "Const"
-		$const.Home.ExpectedLightName
-	}
+	$const = Get-CopyOfModuleVariable "Const"
+	$const.Home.ExpectedLightName
 }
 
 function Get-InitializedLightsMap {
-	[CmdletBinding()]
-	[OutputType([psobject])]
-	param()
-	process {
-		$lights = Get-CopyOfModuleVariable "Lights"
-		$lights
-	}
+	$lights = Get-CopyOfModuleVariable "Lights"
+	$lights
 }
 
 function Set-InitializedLightsMap {
-	[CmdletBinding()]
 	param(
 		[Parameter(Mandatory=$true)]
 		[psobject]$map
 	)
-	process {
-		Set-ModuleVariable "Lights" $map
-		$map
-	}
+	
+	Set-ModuleVariable "Lights" $map
+	$map
 }
 
 function Set-InitializedConstantsMap {
-	[CmdletBinding()]
 	param(
 		[Parameter(Mandatory=$true)]
 		[psobject]$map
 	)
-	process {
-		Set-ModuleVariable "Const" $map
-		$map
-	}
+
+	Set-ModuleVariable "Const" $map
+	$map
 }
 
 function Exit-MainThread {
