@@ -12,19 +12,23 @@ $global:hueModuleRootPathForTests = $rootPath
 Remove-Module Hue.Script -ErrorAction SilentlyContinue
 Import-Module Hue.Script
 
-Describe "CallSetContext" {
+Describe ": Given a newly imported script module" {
 
-    Context "When first called" {
+    Context ": When run configuration is set" {
         
         $result = Set-Context http://localhost API/1234
 
-        It "returns the input parameters as object" {
+        It ": Then it should echo the specified configuration" {
             $result.Server | Should -Be "http://localhost"
             $result.ApiKey | Should -Be "API/1234"
         }
     }
-	
-	Context "When already initialized" {
+
+}
+
+Describe ": Given a script module with run configuration set" {
+
+	Context ": When run configuration is updated" {
         
 		# InModuleScope can access non-exported functions.
 		# But note that it can't access the test script param $rootPath - had to create a global var for this.
@@ -42,55 +46,50 @@ Describe "CallSetContext" {
 			# Call again.
 			$subsequentCall = Set-Context http://localhost/2 API/1234/2 -Debug -Confirm:$false
 
-			It "expected light is initialized" {
+			It ": Then valid configuration is retrievable" {
 				$expectedLight | Should -Not -Be $null
 			}
 			
-			It "first call finds empty lights map" {
+			It ": And run configuration echos the latest settings" {
+				# First call to Set-Context finds empty lights map (unintialized)
 				Assert-MockCalled Write-Debug -Exactly -Times 1 -ParameterFilter {
 					$Message -match "^.*False$"
 				}
-			}
-			
-			It "subsequent call finds lights map with expected member" {
+				# Subsequent call finds lights map already initialized
 				Assert-MockCalled Write-Debug -Exactly -Times 1 -ParameterFilter {
 					$Message -match "^.*True$"
 				}
-			}
-			
-			It "context is set" {
+				# Context is set
 				$firstCall.Server | Should -Be "http://localhost"
 				$firstCall.ApiKey | Should -Be "API/1234"
-			}
-			
-			It "context is overridden" {
+				# Context is overridden
 				$subsequentCall.Server | Should -Be "http://localhost/2"
 				$subsequentCall.ApiKey | Should -Be "API/1234/2"
 			}
-		
+
 		}
     }
 
 }
 
 
-Describe "CallStartLightsMonitor" {
+Describe ": Given mocked script module" {
 
-	Context "Already running" {
+	Context ": When attempt to start an already running lights monitor" {
         
 		Mock -ModuleName Hue.Script Write-Verbose {}
 		Mock -ModuleName Hue.Script Get-EventSubscriber { return "Dummy non-null value" }
 		
         $result = Start-LightsMonitor
 
-		It "detects running and exits" {
+		It ": Then an error is logged and no further action is taken" {
 			Assert-MockCalled -ModuleName Hue.Script Write-Verbose -Exactly -Times 1
 			$result | Should -Be $null
 		}
 
     }
 	
-	Context "Invalid lights map" {
+	Context ": When start lights monitor with an unexpected configuration" {
         
 		Mock -ModuleName Hue.Script Write-Debug {} -Verifiable -ParameterFilter {
 			$Message -like "Get-LightsMap called, but doesn't contain expected light *"
@@ -104,7 +103,7 @@ Describe "CallStartLightsMonitor" {
 		
         $result = Start-LightsMonitor
 
-		It "cannot find expected light" {
+		It ": Then lights config anomaly is logged" {
 			# Below asserts that mock called. 
 			# Above see that mock returns empty (invalid) lights map.
 			Assert-MockCalled -ModuleName Hue.Script Get-LightsMap -Times 1
@@ -112,13 +111,13 @@ Describe "CallStartLightsMonitor" {
 			Assert-VerifiableMock
 		}
 		
-		It "returns result at end of function" {
+		It ": And lights monitor is started" {
 			$result | Should -Be "final return value"
 		}
 
     }
 	
-	Context "Valid lights map" {
+	Context ": When start lights monitor with valid configuration" {
 		
 		# InModuleScope can access non-exported functions.
 		InModuleScope Hue.Script {
@@ -138,7 +137,7 @@ Describe "CallStartLightsMonitor" {
 			$result = Start-LightsMonitor
 			
 
-			It "finds expected light" {			
+			It ": Then lights config is successfully validated" {			
 				# Below asserts that mock called. 
 				# Above see that mock returns lights map with the expected light.
 				Assert-MockCalled Get-LightsMap -Times 1
@@ -146,11 +145,11 @@ Describe "CallStartLightsMonitor" {
 				Assert-MockCalled Write-Debug -Exactly -Times 0
 			}
 			
-			It "returns result at end of function" {
+			It ": And lights monitor is started" {
 				$result | Should -Be "final return value"
 			}
 			
-			It "module lights map is set" {
+			It ": And light events for the house are preserved" {
 				$moduleLightsMap = Get-InitializedLightsMap
 				$moduleLightsMap["$expectedLight"] | Should -Be "1"
 			}
@@ -158,7 +157,12 @@ Describe "CallStartLightsMonitor" {
 		}
 	}
 	
-	Context "Infinite loop for Powershell Core on Pi" {
+}
+
+
+Describe ": Given script module running in Powershell Core on Pi" {
+
+	Context ": When start lights monitor in keep-alive mode" {
         
 		# InModuleScope can access non-exported functions.
 		InModuleScope Hue.Script {
@@ -179,11 +183,11 @@ Describe "CallStartLightsMonitor" {
 			$result = Start-LightsMonitor -KeepAlive
 			
 			
-			It "returns result at end of function" {
+			It ": Then lights monitor is started" {
 				$result | Should -Be "final return value"
 			}
 			
-			It "progresses to the infinite loop" {
+			It ": And polling loop is entered" {
 				# Verify that write host called with expected message
 				Assert-VerifiableMock
 			}
@@ -197,9 +201,9 @@ Describe "CallStartLightsMonitor" {
 # NOTE: Watch-LightChanges normally called on background thread. But the calling context is actually irrelevant
 #  because the only context used is that of the module - see $thisModule.NewBoundScriptBlock($action).
 # So I can call and test directly - the function doesn't even use the input $event object.
-Describe "CallWatchLightChanges" {
+Describe ": Given a running lights monitor" {
 
-	Context "No auto-off lights specified" {
+	Context ": When no house lights events are configured" {
 		# InModuleScope can access non-exported functions.
 		InModuleScope Hue.Script {
 			# Arrange
@@ -215,18 +219,18 @@ Describe "CallWatchLightChanges" {
 			$result = Watch-LightChanges
 
 			# Assert
-			It "null pipeline as no auto-off events checked" {
+			It ": Then no auto-off event is triggered" {
 				$result | Should -BeNullOrEmpty
 			}
 
-			It "no auto-off logic executed" {
+			It ": And no auto-off logic executes" {
 				Assert-MockCalled Write-Verbose -Exactly -Times 1
 			}
 
 		}
 	}
 
-	Context "Auto-off light configured with events mocked" {
+	Context ": When house lights events are configured" {
 		# InModuleScope can access non-exported functions.
 		InModuleScope Hue.Script {
 			# Arrange
@@ -251,11 +255,11 @@ Describe "CallWatchLightChanges" {
 			$result = Watch-LightChanges
 
 			# Assert
-			It "pipeline includes auto-off event" {
+			It ": Then auto-off events are included" {
 				$result | Should -Not -BeNullOrEmpty
 			}
 
-			It "all event functions called" {
+			It ": And house lights events are raised" {
 				Assert-MockCalled Write-Verbose -Times 3
 				Assert-VerifiableMock
 			}
@@ -263,7 +267,7 @@ Describe "CallWatchLightChanges" {
 		}
 	}
 
-	Context "Verify Test-RegisterAutoOff input data" {
+	Context ": When a known auto-off house light event is configured" {
 		# InModuleScope can access non-exported functions.
 		InModuleScope Hue.Script {
 			# Arrange
@@ -290,18 +294,18 @@ Describe "CallWatchLightChanges" {
 			$result = Watch-LightChanges
 
 			# Assert
-			It "test light check evaluates to false" {
+			It ": Then the hub is queried to see if the light is on" {
 				$result | Should -BeNullOrEmpty
 			}
 
-			It "test light input data as expected" {
+			It ": And the known light data is included in this query" {
 				Assert-VerifiableMock
 			}
 
 		}
 	}
 
-	Context "Auto-off light event fires" {
+	Context ": When auto-off light event is allowed to fire, unhindered (no mocking)" {
 		# InModuleScope can access non-exported functions.
 		InModuleScope Hue.Script {
 			# Arrange
@@ -329,7 +333,7 @@ Describe "CallWatchLightChanges" {
 			Start-Sleep -Milliseconds 2000
 
 			# Assert
-			It "background event fired" {
+			It ": Then a background thread receives the event" {
 				Assert-MockCalled Write-Verbose -Exactly -Times 1 -ParameterFilter {
 					$Message -eq "Spawned event from http://localhost/test-bkgrnd-event for light 1"
 				}

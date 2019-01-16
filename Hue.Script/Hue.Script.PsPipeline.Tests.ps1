@@ -1,13 +1,13 @@
 Remove-Module Hue.Script -ErrorAction SilentlyContinue
 Import-Module Hue.Script
 
-Describe "CallSetContext" {
+Describe ": Given a newly imported script module" {
 
-    Context "With WhatIf switch" {
+    Context ": When Set-Context is called with the WhatIf switch" {
         
         $result = Set-Context http://localhost/whatif API/1234-whatif -WhatIf
 
-        It "impacting update code not executed" {
+        It ": Then the run configuration is not actually updated" {
             $result.Server | Should -Not -Be "http://localhost/whatif"
             $result.ApiKey | Should -Not -Be "API/1234-whatif"
         }
@@ -15,9 +15,9 @@ Describe "CallSetContext" {
 
 }
 
-Describe "CallStartLightsMonitor" {
+Describe ": Given a script module with run configuration set" {
 
-    Context "With WhatIf switch" {
+    Context ": When start lights monitor with WhatIf switch" {
 		
 		# InModuleScope can access non-exported functions.
 		InModuleScope Hue.Script {
@@ -34,7 +34,7 @@ Describe "CallStartLightsMonitor" {
 			
 			Start-LightsMonitor -WhatIf
             
-			It "impacting event threading code not executed" {
+			It ": Then the lights event is not registered" {
 				Assert-MockCalled Register-BoundLightEvent -Exactly -Times 0
 			}
 			
