@@ -50,7 +50,7 @@ Describe ": Given a script module with run configuration set" {
 				$expectedLight | Should -Not -Be $null
 			}
 			
-			It ": And run configuration echos the latest settings" {
+			It ": Then run configuration echos the latest settings" {
 				# First call to Set-Context finds empty lights map (unintialized)
 				Assert-MockCalled Write-Debug -Exactly -Times 1 -ParameterFilter {
 					$Message -match "^.*False$"
@@ -111,7 +111,7 @@ Describe ": Given mocked script module" {
 			Assert-VerifiableMock
 		}
 		
-		It ": And lights monitor is started" {
+		It ": Then lights monitor is started" {
 			$result | Should -Be "final return value"
 		}
 
@@ -145,11 +145,11 @@ Describe ": Given mocked script module" {
 				Assert-MockCalled Write-Debug -Exactly -Times 0
 			}
 			
-			It ": And lights monitor is started" {
+			It ": Then lights monitor is started" {
 				$result | Should -Be "final return value"
 			}
 			
-			It ": And light events for the house are preserved" {
+			It ": Then light events for the house are preserved" {
 				$moduleLightsMap = Get-InitializedLightsMap
 				$moduleLightsMap["$expectedLight"] | Should -Be "1"
 			}
@@ -187,7 +187,7 @@ Describe ": Given script module running in Powershell Core on Pi" {
 				$result | Should -Be "final return value"
 			}
 			
-			It ": And polling loop is entered" {
+			It ": Then polling loop is entered" {
 				# Verify that write host called with expected message
 				Assert-VerifiableMock
 			}
@@ -223,7 +223,7 @@ Describe ": Given a running lights monitor" {
 				$result | Should -BeNullOrEmpty
 			}
 
-			It ": And no auto-off logic executes" {
+			It ": Then no auto-off logic executes" {
 				Assert-MockCalled Write-Verbose -Exactly -Times 1
 			}
 
@@ -259,7 +259,7 @@ Describe ": Given a running lights monitor" {
 				$result | Should -Not -BeNullOrEmpty
 			}
 
-			It ": And house lights events are raised" {
+			It ": Then house lights events are raised" {
 				Assert-MockCalled Write-Verbose -Times 3
 				Assert-VerifiableMock
 			}
@@ -298,7 +298,7 @@ Describe ": Given a running lights monitor" {
 				$result | Should -BeNullOrEmpty
 			}
 
-			It ": And the known light data is included in this query" {
+			It ": Then the known light data is included in this query" {
 				Assert-VerifiableMock
 			}
 
