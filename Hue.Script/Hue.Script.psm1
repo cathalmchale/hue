@@ -1,5 +1,5 @@
 
-$Const = Get-Content "$PSScriptRoot\Const.psd1" | Out-String | Invoke-Expression
+$Const = Import-PowerShellDataFile "$PSScriptRoot\Const.psd1"
 
 $Context = @{
 	Server = ""
