@@ -151,13 +151,15 @@ function Invoke-AutoOff {
 
 
 function Stop-LightsMonitor {
-	[CmdletBinding()]
+	[CmdletBinding(SupportsShouldProcess, ConfirmImpact='Medium')]
 	param()
 	process {
 		$m = Get-EventSubscriber | Measure-Object
 		Write-Debug "Clearing event subscriptions. Active count currently: $($m.Count)"
 
-		Get-EventSubscriber | Unregister-Event
+		if ($PSCmdlet.ShouldProcess("Lights Monitor", "Stop background thread")) {
+			Get-EventSubscriber | Unregister-Event
+		}
 
 		$m = Get-EventSubscriber | Measure-Object
 		Write-Debug "Unregister-Event called for all subscriptions. Active count currently: $($m.Count)"

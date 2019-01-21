@@ -117,7 +117,7 @@ function Register-BoundLightEvent {
 		$thisModule = Get-Module Hue.Script
 		$boundAction = $thisModule.NewBoundScriptBlock($action)
 
-		$start = Register-ObjectEvent $timer Elapsed -SourceIdentifier $sourceIdentifier -Action $boundAction -MessageData $arg
+		Register-ObjectEvent $timer Elapsed -SourceIdentifier $sourceIdentifier -Action $boundAction -MessageData $arg
 		$timer.start()
 
 		$details = @{

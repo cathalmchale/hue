@@ -11,6 +11,28 @@ Describe ": Given a newly imported script module" {
             $result.Server | Should -Not -Be "http://localhost/whatif"
             $result.ApiKey | Should -Not -Be "API/1234-whatif"
         }
+	}
+	
+	Context ": When Stop-LightsMonitor is called with the WhatIf switch" {
+		
+		# Ensure no events before running test
+		Get-EventSubscriber | Unregister-Event
+		
+		# Now register an arbitrary event 
+		Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action {
+			Write-Host "PowerShell.Exiting event fired"
+		}
+
+		# Calling with -WhatIf does not affect registered events
+        Stop-LightsMonitor -WhatIf
+
+        It ": Then no event subscribers are actually unregistered" {
+			$m = Get-EventSubscriber | Measure-Object
+			$m.Count | Should -Not -Be 0
+
+			# Cleanup
+			Get-EventSubscriber | Unregister-Event
+        }
     }
 
 }

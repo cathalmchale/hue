@@ -342,4 +342,22 @@ Describe ": Given a running lights monitor" {
 		}
 	}
 
+	Context ": When Stop-LightsMonitor is called" {
+		
+		# Register an arbitrary event (mimic running lights monitor)
+		Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action {
+			Write-Host "PowerShell.Exiting event fired"
+		}
+
+        Stop-LightsMonitor
+
+        It ": Then event subscribers are unregistered" {
+			$m = Get-EventSubscriber | Measure-Object
+			$m.Count | Should -Be 0
+
+			# Cleanup
+			Get-EventSubscriber | Unregister-Event
+        }
+    }
+
 }
