@@ -45,7 +45,7 @@ function Get-EventSourceId {
 
 
 
-function Get-RegisteredEvents {
+function Get-RegisteredEvent {
 	[CmdletBinding()]
     [OutputType([psobject])]
 	param(
@@ -74,8 +74,8 @@ function Test-RegisterAutoOff {
 	) 
 	process {
 		Write-Verbose "Testing light $lightId for auto-off."
-		$registeredEvents = Get-RegisteredEvents $lightId $const
-		If ($registeredEvents) 
+		$registeredEvent = Get-RegisteredEvent $lightId $const
+		If ($registeredEvent) 
 		{
 			Write-Verbose "Event already registered against light $lightId"
 			return

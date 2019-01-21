@@ -67,7 +67,7 @@ function Start-LightsMonitor {
 		Write-Verbose "Registering main events loop to monitor lights"
 		# NOTE: Within the (async) action script block, module and function variables are not in scope.
 		# Building appropriate callback dynamically from a string instead.
-		$action = Get-EventCallback "Watch-LightChanges" -Verbose:$VerbosePreference -Debug:$DebugPreference
+		$action = Get-EventCallback "Watch-ForLightStateChange" -Verbose:$VerbosePreference -Debug:$DebugPreference
 
 		if ($PSCmdlet.ShouldProcess("Lights Monitor", "Start background thread")) {
 			$details = Register-BoundLightEvent $script:Const.Event.MainMonitorId $script:Const.Event.MainMonitorInterval $action -Loop
@@ -88,7 +88,7 @@ function Start-LightsMonitor {
 }
 
 
-function Watch-LightChanges {
+function Watch-ForLightStateChange {
 	[CmdletBinding()]
     [OutputType([psobject])]
 	param(

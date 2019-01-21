@@ -198,7 +198,7 @@ Describe ": Given script module running in Powershell Core on Pi" {
 }
 
 
-# NOTE: Watch-LightChanges normally called on background thread. But the calling context is actually irrelevant
+# NOTE: Watch-ForLightStateChange normally called on background thread. But the calling context is actually irrelevant
 #  because the only context used is that of the module - see $thisModule.NewBoundScriptBlock($action).
 # So I can call and test directly - the function doesn't even use the input $event object.
 Describe ": Given a running lights monitor" {
@@ -216,7 +216,7 @@ Describe ": Given a running lights monitor" {
 			
 			# Act
 			Set-InitializedConstantsMap $mockConstantsMap
-			$result = Watch-LightChanges
+			$result = Watch-ForLightStateChange
 
 			# Assert
 			It ": Then no auto-off event is triggered" {
@@ -252,7 +252,7 @@ Describe ": Given a running lights monitor" {
 			# Act
 			Set-InitializedLightsMap $mockLightsMap
 			Set-InitializedConstantsMap $mockConstantsMap
-			$result = Watch-LightChanges
+			$result = Watch-ForLightStateChange
 
 			# Assert
 			It ": Then auto-off events are included" {
@@ -291,7 +291,7 @@ Describe ": Given a running lights monitor" {
 			Set-Context "http://localhost/test-input" "API/1234"
 			Set-InitializedLightsMap $mockLightsMap
 			Set-InitializedConstantsMap $mockConstantsMap
-			$result = Watch-LightChanges
+			$result = Watch-ForLightStateChange
 
 			# Assert
 			It ": Then the hub is queried to see if the light is on" {
@@ -328,7 +328,7 @@ Describe ": Given a running lights monitor" {
 			Set-Context "http://localhost/test-bkgrnd-event" "API/1234"
 			Set-InitializedLightsMap $mockLightsMap
 			Set-InitializedConstantsMap $mockConstantsMap
-			$result = Watch-LightChanges
+			Watch-ForLightStateChange
 			# Sleep to give time for background event to fire
 			Start-Sleep -Milliseconds 2000
 
